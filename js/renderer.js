@@ -24,16 +24,17 @@ export class Renderer {
   }
 
   resize() {
-    this.w = Math.max(1, window.innerWidth || document.documentElement.clientWidth || 320);
-    this.h = Math.max(1, window.innerHeight || document.documentElement.clientHeight || 480);
+    const vv = window.visualViewport;
+    this.w = Math.max(1, Math.floor((vv && vv.width) || window.innerWidth || document.documentElement.clientWidth || 320));
+    this.h = Math.max(1, Math.floor((vv && vv.height) || window.innerHeight || document.documentElement.clientHeight || 480));
     const mobile = this.w < 900 || /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
     this.dpr = Math.min(window.devicePixelRatio || 1, mobile ? 1 : 1.25);
     // Zoom menor no celular para enxergar mais à frente
-    this.viewScale = mobile ? (this.w < this.h ? 0.42 : 0.5) : 0.72;
+    this.viewScale = mobile ? (this.w < this.h ? 0.34 : 0.42) : 0.68;
     this.canvas.width = Math.floor(this.w * this.dpr);
     this.canvas.height = Math.floor(this.h * this.dpr);
-    this.canvas.style.width = `${this.w}px`;
-    this.canvas.style.height = `${this.h}px`;
+    this.canvas.style.width = "100%";
+    this.canvas.style.height = "100%";
     let ctx = null;
     try {
       ctx = this.canvas.getContext("2d", { alpha: false });

@@ -228,13 +228,42 @@ function uiTap(e) {
 }
 
 const app = $("#app");
+
+// Fallback explícito do botão JOGAR (iOS às vezes engole delegação)
+window.__gdPlay = (e) => {
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  handleAction("play");
+};
+const playBtn = $("#btn-play");
+if (playBtn) {
+  playBtn.onclick = (e) => window.__gdPlay(e);
+  playBtn.ontouchend = (e) => {
+    e.preventDefault();
+    window.__gdPlay(e);
+  };
+}
+
 app.addEventListener("pointerdown", uiTap, { passive: false });
+app.addEventListener("touchend", (e) => {
+  const btn = e.target.closest("[data-action], [data-back], #btn-pause, #btn-practice, .level-card, .icon-slot");
+  if (!btn) return;
+  uiTap(e);
+}, { passive: false });
 app.addEventListener("click", (e) => {
-  // Fallback se pointerdown não existir/não disparar
   if (e.target.closest("[data-action], [data-back], #btn-pause, #btn-practice, .level-card, .icon-slot")) {
     uiTap(e);
   }
 }, true);
+
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", () => {
+    renderer.resize();
+    if (!game.running) idleDraw();
+  });
+}
 
 function idleDraw() {
   if (game.running) return;
