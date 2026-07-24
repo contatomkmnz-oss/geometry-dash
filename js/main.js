@@ -6,8 +6,6 @@ import { Input } from "./input.js";
 import { Renderer } from "./renderer.js";
 import { Game } from "./game.js";
 
-import { AutoPlayer } from "./autoplay.js";
-
 const $ = (sel) => document.querySelector(sel);
 const canvas = $("#game");
 const save = loadSave();
@@ -309,22 +307,5 @@ document.addEventListener(
   }
 );
 
-// Exposto para testes / modo automático
+// Exposto para debug
 window.__GD = { game, input, audio, save, startGame, handleAction };
-
-const params = new URLSearchParams(location.search);
-if (params.get("auto") === "1") {
-  const bot = new AutoPlayer(game);
-  game.autoplay = bot;
-  bot.start();
-  // inicia sozinho após curto delay
-  setTimeout(() => {
-    const lvl = Number(params.get("level") || 0);
-    startGame(Number.isFinite(lvl) ? lvl : 0);
-  }, 300);
-
-  // relatório periódico no console
-  setInterval(() => {
-    console.log("[AUTOPLAY REPORT]", bot.report());
-  }, 5000);
-}

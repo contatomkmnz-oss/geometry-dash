@@ -34,7 +34,6 @@ export class Game {
     this._lastHudPct = -1;
     this.runMoney = 0;
     this._deathShown = false;
-    this.autoplay = null;
   }
 
   startLevel(levelId, { practice = false } = {}) {
@@ -128,9 +127,6 @@ export class Game {
     if (!this.running) return;
     const dt = Math.min(0.033, (now - this.last) / 1000 || 0.016);
     this.last = now;
-
-    // Bot decide ANTES do beginFrame para valer neste tick
-    if (this.autoplay) this.autoplay.tick();
 
     this.input.beginFrame();
 
