@@ -2,7 +2,11 @@
 
 Clone jogável inspirado em Geometry Dash — HTML5 Canvas + JavaScript puro.
 
-## Como jogar
+## Jogar online
+
+https://contatomkmnz-oss.github.io/geometry-dash/
+
+## Como jogar localmente
 
 Abra um servidor local na pasta do projeto (módulos ES não funcionam em `file://`):
 
@@ -27,3 +31,4 @@ Depois abra: http://localhost:5188
 - Orbs, pads, portais e gravidade
 - Progresso, estrelas e ícones no `localStorage`
 - Música e SFX via Web Audio API
+- Pulo duplo no modo Cubo
