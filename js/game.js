@@ -37,13 +37,18 @@ export class Game {
 
   startLevel(levelId, { practice = false } = {}) {
     this.levelId = levelId;
-    this.level = structuredClone(getLevel(levelId));
+    const src = getLevel(levelId);
+    // structuredClone falta em alguns celulares antigos
+    this.level = typeof structuredClone === "function"
+      ? structuredClone(src)
+      : JSON.parse(JSON.stringify(src));
     this.solids = this.level.objects.filter((o) => o.type === "block");
     this.interactables = this.level.objects.filter((o) => o.type !== "block");
     this.practice = practice;
     this.checkpoints = [];
     this.attempt = (this.save.attempts[levelId] || 0) + 1;
     recordAttempt(this.save, levelId);
+    this.input.setEnabled(true);
     this.input.held = false;
     this.input.justPressed = false;
     this.input._queuePress = false;
@@ -54,7 +59,7 @@ export class Game {
     this.paused = false;
     this.state = "playing";
     this.audio.stopMusic();
-    this.audio.startMusic(this.level.bpm);
+    try { this.audio.startMusic(this.level.bpm); } catch { /* ignore */ }
     this.onUI({ type: "playing", attempt: this.attempt, practice: this.practice });
     this.last = performance.now();
     cancelAnimationFrame(this.raf);
@@ -99,6 +104,7 @@ export class Game {
   stopToMenu() {
     this.running = false;
     this.paused = false;
+    this.input.setEnabled(false);
     this.audio.stopMusic();
     cancelAnimationFrame(this.raf);
     this.onUI({ type: "menu" });

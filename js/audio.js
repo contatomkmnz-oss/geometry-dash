@@ -11,25 +11,43 @@ export class AudioEngine {
 
   async ensure() {
     if (this.ctx) return;
-    const AC = window.AudioContext || window.webkitAudioContext;
-    this.ctx = new AC();
-    this.musicGain = this.ctx.createGain();
-    this.sfxGain = this.ctx.createGain();
-    this.musicGain.gain.value = 0.14;
-    this.sfxGain.gain.value = 0.3;
-    this.musicGain.connect(this.ctx.destination);
-    this.sfxGain.connect(this.ctx.destination);
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) {
+        this.enabled = false;
+        return;
+      }
+      this.ctx = new AC();
+      this.musicGain = this.ctx.createGain();
+      this.sfxGain = this.ctx.createGain();
+      this.musicGain.gain.value = 0.14;
+      this.sfxGain.gain.value = 0.3;
+      this.musicGain.connect(this.ctx.destination);
+      this.sfxGain.connect(this.ctx.destination);
 
-    // Tiny reusable noise buffer (was allocating 2s every hat hit)
-    const len = Math.floor(this.ctx.sampleRate * 0.05);
-    this._noise = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
-    const data = this._noise.getChannelData(0);
-    for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+      const len = Math.floor(this.ctx.sampleRate * 0.05);
+      this._noise = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+      const data = this._noise.getChannelData(0);
+      for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+    } catch {
+      this.enabled = false;
+      this.ctx = null;
+    }
   }
 
   async unlock() {
-    await this.ensure();
-    if (this.ctx.state === "suspended") await this.ctx.resume();
+    try {
+      await this.ensure();
+      if (!this.ctx) return;
+      if (this.ctx.state === "suspended") {
+        await Promise.race([
+          this.ctx.resume(),
+          new Promise((r) => setTimeout(r, 400)),
+        ]);
+      }
+    } catch {
+      // Nunca trava o toque do usuário no mobile
+    }
   }
 
   tone(freq, dur = 0.08, type = "square", gain = 0.2) {

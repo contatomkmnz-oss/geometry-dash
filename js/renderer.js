@@ -23,16 +23,22 @@ export class Renderer {
   }
 
   resize() {
-    this.w = window.innerWidth;
-    this.h = window.innerHeight;
-    // Prefer lower res on small/weak screens
-    const low = this.w * this.h > 1_500_000 || this.w < 900;
+    this.w = Math.max(1, window.innerWidth || document.documentElement.clientWidth || 320);
+    this.h = Math.max(1, window.innerHeight || document.documentElement.clientHeight || 480);
+    const low = this.w < 900 || /Mobi|Android|iPhone/i.test(navigator.userAgent);
     this.dpr = Math.min(window.devicePixelRatio || 1, low ? 1 : 1.25);
     this.canvas.width = Math.floor(this.w * this.dpr);
     this.canvas.height = Math.floor(this.h * this.dpr);
     this.canvas.style.width = `${this.w}px`;
     this.canvas.style.height = `${this.h}px`;
-    this.ctx = this.canvas.getContext("2d", { alpha: false, desynchronized: true });
+    // desynchronized breaks some mobile browsers — fall back safely
+    let ctx = null;
+    try {
+      ctx = this.canvas.getContext("2d", { alpha: false });
+    } catch {
+      ctx = this.canvas.getContext("2d");
+    }
+    this.ctx = ctx;
     this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     this._groundY = this.h * 0.72;
   }

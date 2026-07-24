@@ -13,6 +13,9 @@ const audio = new AudioEngine();
 const input = new Input(canvas);
 const renderer = new Renderer(canvas);
 
+// Canvas não bloqueia o menu no mobile
+input.setEnabled(false);
+
 const ui = {
   menu: $("#menu"),
   levels: $("#levels"),
@@ -45,6 +48,7 @@ function hideAllScreens() {
 function showScreen(name) {
   hideAllScreens();
   ui.hud.classList.add("hidden");
+  input.setEnabled(false);
   if (name === "menu") {
     ui.menu.classList.remove("hidden");
     refreshMenuStats();
@@ -57,6 +61,7 @@ function showScreen(name) {
   } else if (name === "howto") {
     ui.howto.classList.remove("hidden");
   }
+  idleDraw();
 }
 
 function refreshMenuStats() {
@@ -73,19 +78,12 @@ function renderLevels() {
     const best = save.bestPercent[lvl.id] || 0;
     const done = !!save.completed[lvl.id];
     const btn = document.createElement("button");
+    btn.type = "button";
     btn.className = "level-card";
-    btn.innerHTML = `
-      <div class="name">${done ? "✓ " : ""}${lvl.name}</div>
-      <div class="meta">
-        <span class="diff">${lvl.difficulty} · ${"★".repeat(lvl.stars)}</span>
-        <span>${best}%</span>
-      </div>
-    `;
-    btn.addEventListener("click", async () => {
-      await audio.unlock();
-      audio.click();
-      startGame(lvl.id);
-    });
+    btn.innerHTML =
+      `<div class="name">${done ? "✓ " : ""}${lvl.name}</div>` +
+      `<div class="meta"><span class="diff">${lvl.difficulty} · ${"★".repeat(lvl.stars)}</span><span>${best}%</span></div>`;
+    bindTap(btn, () => startGame(lvl.id));
     ui.levelList.appendChild(btn);
   });
 }
@@ -95,15 +93,15 @@ function renderIcons() {
   ICON_UNLOCKS.forEach((icon) => {
     const unlocked = save.unlockedIcons.includes(icon.id);
     const slot = document.createElement("button");
+    slot.type = "button";
     slot.className = `icon-slot${unlocked ? "" : " locked"}${save.selectedIcon === icon.id ? " selected" : ""}`;
     slot.title = unlocked ? icon.name : `Complete o nível ${icon.unlock}`;
     slot.style.background = unlocked ? COLORS.player[icon.id] : "#121a33";
     slot.textContent = unlocked ? "◆" : "🔒";
-    slot.addEventListener("click", () => {
+    bindTap(slot, () => {
       if (!unlocked) return;
       save.selectedIcon = icon.id;
       writeSave(save);
-      audio.click();
       renderIcons();
     });
     ui.iconGrid.appendChild(slot);
@@ -131,18 +129,27 @@ function handleUI(msg) {
     ui.pause.classList.add("hidden");
     ui.death.classList.add("hidden");
     ui.complete.classList.add("hidden");
+    input.setEnabled(true);
   }
-  if (msg.type === "pause") ui.pause.classList.remove("hidden");
-  if (msg.type === "resume") ui.pause.classList.add("hidden");
+  if (msg.type === "pause") {
+    ui.pause.classList.remove("hidden");
+    input.setEnabled(false);
+  }
+  if (msg.type === "resume") {
+    ui.pause.classList.add("hidden");
+    input.setEnabled(true);
+  }
   if (msg.type === "death") {
     ui.deathPercent.textContent = `${Math.floor(msg.percent)}%`;
     ui.death.classList.remove("hidden");
+    input.setEnabled(false);
   }
   if (msg.type === "complete") {
     ui.completeStars.textContent = "★".repeat(msg.stars);
     ui.completeMoney.textContent = `+ R$ ${msg.runMoney ?? 0} nesta partida`;
     ui.completeAttempts.textContent = `Tentativas: ${msg.attempts}`;
     ui.complete.classList.remove("hidden");
+    input.setEnabled(false);
     refreshMenuStats();
   }
   if (msg.type === "menu") {
@@ -151,17 +158,42 @@ function handleUI(msg) {
 }
 
 function startGame(levelId) {
-  hideAllScreens();
-  ui.hud.classList.remove("hidden");
-  game.startLevel(levelId, { practice: false });
+  try {
+    hideAllScreens();
+    ui.hud.classList.remove("hidden");
+    game.startLevel(levelId, { practice: false });
+  } catch (err) {
+    console.error(err);
+    alert("Erro ao iniciar: " + (err && err.message ? err.message : err));
+    showScreen("menu");
+  }
+}
+
+/** Toque confiável no mobile (não espera áudio) */
+function bindTap(el, fn) {
+  let locked = false;
+  const run = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (locked) return;
+    locked = true;
+    try {
+      // Áudio em paralelo — nunca bloqueia o botão
+      audio.unlock().then(() => { try { audio.click(); } catch {} }).catch(() => {});
+      fn();
+    } finally {
+      setTimeout(() => { locked = false; }, 250);
+    }
+  };
+  el.addEventListener("click", run);
+  el.addEventListener("pointerup", (e) => {
+    if (e.pointerType === "touch" || e.pointerType === "pen") run(e);
+  });
 }
 
 document.querySelectorAll("[data-action]").forEach((btn) => {
-  btn.addEventListener("click", async () => {
-    await audio.unlock();
+  bindTap(btn, () => {
     const action = btn.dataset.action;
-    audio.click();
-
     if (action === "play") startGame(0);
     if (action === "levels") showScreen("levels");
     if (action === "icons") showScreen("icons");
@@ -172,6 +204,7 @@ document.querySelectorAll("[data-action]").forEach((btn) => {
       ui.pause.classList.add("hidden");
       ui.complete.classList.add("hidden");
       game.retry();
+      input.setEnabled(true);
     }
     if (action === "to-menu") {
       game.stopToMenu();
@@ -185,41 +218,51 @@ document.querySelectorAll("[data-action]").forEach((btn) => {
 });
 
 document.querySelectorAll("[data-back]").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    audio.click();
-    showScreen(btn.dataset.back);
-  });
+  bindTap(btn, () => showScreen(btn.dataset.back));
 });
 
-$("#btn-pause").addEventListener("click", async () => {
-  await audio.unlock();
-  game.togglePause();
-});
-
-$("#btn-practice").addEventListener("click", async () => {
-  await audio.unlock();
+bindTap($("#btn-pause"), () => game.togglePause());
+bindTap($("#btn-practice"), () => {
   if (!game.running) return;
   game.practice = !game.practice;
   if (!game.practice) game.checkpoints = [];
-  audio.click();
 });
 
 function idleDraw() {
   if (game.running) return;
-  renderer.draw({
-    level: { objects: [], theme: 0 },
-    player: { alive: false, x: 0, y: 0, w: 0, h: 0, mode: "cube", rotation: 0 },
-    particles: { items: [] },
-    camX: 0,
-    practice: false,
-    checkpoints: [],
-    attemptFlash: 0,
-    iconId: save.selectedIcon,
-  });
+  try {
+    renderer.draw({
+      level: { objects: [], theme: 0 },
+      player: { alive: false, x: 0, y: 0, w: 0, h: 0, mode: "cube", rotation: 0 },
+      particles: { items: [] },
+      camX: 0,
+      practice: false,
+      checkpoints: [],
+      attemptFlash: 0,
+      iconId: save.selectedIcon,
+    });
+  } catch (err) {
+    console.error(err);
+  }
 }
 
 showScreen("menu");
 idleDraw();
+
 window.addEventListener("resize", () => {
+  renderer.resize();
   if (!game.running) idleDraw();
 });
+window.addEventListener("orientationchange", () => {
+  setTimeout(() => {
+    renderer.resize();
+    if (!game.running) idleDraw();
+  }, 200);
+});
+
+// iOS: reativa áudio no primeiro toque em qualquer lugar
+window.addEventListener(
+  "touchstart",
+  () => { audio.unlock().catch(() => {}); },
+  { once: true, passive: true }
+);
