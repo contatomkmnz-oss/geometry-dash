@@ -21,7 +21,11 @@ export function loadSave() {
 }
 
 export function writeSave(data) {
-  localStorage.setItem(KEY, JSON.stringify(data));
+  try {
+    localStorage.setItem(KEY, JSON.stringify(data));
+  } catch {
+    // Safari privado / storage cheio — não quebra o jogo
+  }
 }
 
 export function addMoney(save, amount = 1) {

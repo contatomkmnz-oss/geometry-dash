@@ -12,8 +12,6 @@ const save = loadSave();
 const audio = new AudioEngine();
 const input = new Input(canvas);
 const renderer = new Renderer(canvas);
-
-// Canvas não bloqueia o menu no mobile
 input.setEnabled(false);
 
 const ui = {
@@ -80,10 +78,10 @@ function renderLevels() {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "level-card";
+    btn.dataset.levelId = String(lvl.id);
     btn.innerHTML =
       `<div class="name">${done ? "✓ " : ""}${lvl.name}</div>` +
       `<div class="meta"><span class="diff">${lvl.difficulty} · ${"★".repeat(lvl.stars)}</span><span>${best}%</span></div>`;
-    bindTap(btn, () => startGame(lvl.id));
     ui.levelList.appendChild(btn);
   });
 }
@@ -95,15 +93,10 @@ function renderIcons() {
     const slot = document.createElement("button");
     slot.type = "button";
     slot.className = `icon-slot${unlocked ? "" : " locked"}${save.selectedIcon === icon.id ? " selected" : ""}`;
+    slot.dataset.iconId = String(icon.id);
     slot.title = unlocked ? icon.name : `Complete o nível ${icon.unlock}`;
     slot.style.background = unlocked ? COLORS.player[icon.id] : "#121a33";
     slot.textContent = unlocked ? "◆" : "🔒";
-    bindTap(slot, () => {
-      if (!unlocked) return;
-      save.selectedIcon = icon.id;
-      writeSave(save);
-      renderIcons();
-    });
     ui.iconGrid.appendChild(slot);
   });
 }
@@ -152,81 +145,96 @@ function handleUI(msg) {
     input.setEnabled(false);
     refreshMenuStats();
   }
-  if (msg.type === "menu") {
-    showScreen("menu");
-  }
+  if (msg.type === "menu") showScreen("menu");
 }
 
 function startGame(levelId) {
+  audio.unlock().catch(() => {});
   try {
     hideAllScreens();
     ui.hud.classList.remove("hidden");
     game.startLevel(levelId, { practice: false });
   } catch (err) {
     console.error(err);
-    alert("Erro ao iniciar: " + (err && err.message ? err.message : err));
     showScreen("menu");
   }
 }
 
-/** Toque confiável no mobile (não espera áudio) */
-function bindTap(el, fn) {
-  let locked = false;
-  const run = async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (locked) return;
-    locked = true;
-    try {
-      // Áudio em paralelo — nunca bloqueia o botão
-      audio.unlock().then(() => { try { audio.click(); } catch {} }).catch(() => {});
-      fn();
-    } finally {
-      setTimeout(() => { locked = false; }, 250);
-    }
-  };
-  el.addEventListener("click", run);
-  el.addEventListener("pointerup", (e) => {
-    if (e.pointerType === "touch" || e.pointerType === "pen") run(e);
-  });
+function handleAction(action) {
+  audio.unlock().catch(() => {});
+  if (action === "play") startGame(0);
+  else if (action === "levels") showScreen("levels");
+  else if (action === "icons") showScreen("icons");
+  else if (action === "howto") showScreen("howto");
+  else if (action === "resume") game.togglePause();
+  else if (action === "restart" || action === "retry") {
+    ui.death.classList.add("hidden");
+    ui.pause.classList.add("hidden");
+    ui.complete.classList.add("hidden");
+    game.retry();
+    input.setEnabled(true);
+  } else if (action === "to-menu") {
+    game.stopToMenu();
+    showScreen("menu");
+  } else if (action === "next") {
+    startGame(Math.min(LEVELS.length - 1, (game.levelId || 0) + 1));
+  }
 }
 
-document.querySelectorAll("[data-action]").forEach((btn) => {
-  bindTap(btn, () => {
-    const action = btn.dataset.action;
-    if (action === "play") startGame(0);
-    if (action === "levels") showScreen("levels");
-    if (action === "icons") showScreen("icons");
-    if (action === "howto") showScreen("howto");
-    if (action === "resume") game.togglePause();
-    if (action === "restart" || action === "retry") {
-      ui.death.classList.add("hidden");
-      ui.pause.classList.add("hidden");
-      ui.complete.classList.add("hidden");
-      game.retry();
-      input.setEnabled(true);
-    }
-    if (action === "to-menu") {
-      game.stopToMenu();
-      showScreen("menu");
-    }
-    if (action === "next") {
-      const next = Math.min(LEVELS.length - 1, (game.levelId || 0) + 1);
-      startGame(next);
-    }
-  });
-});
+// Delegação única — funciona no iOS/Android sem depender de click fantasma
+let tapLock = false;
+function uiTap(e) {
+  const btn = e.target.closest("[data-action], [data-back], #btn-pause, #btn-practice, .level-card, .icon-slot");
+  if (!btn || btn.disabled || btn.classList.contains("locked")) return;
 
-document.querySelectorAll("[data-back]").forEach((btn) => {
-  bindTap(btn, () => showScreen(btn.dataset.back));
-});
+  // Só processa toque/clique primário
+  if (e.type === "pointerdown" && e.button != null && e.button !== 0) return;
 
-bindTap($("#btn-pause"), () => game.togglePause());
-bindTap($("#btn-practice"), () => {
-  if (!game.running) return;
-  game.practice = !game.practice;
-  if (!game.practice) game.checkpoints = [];
-});
+  e.preventDefault();
+  e.stopPropagation();
+  if (tapLock) return;
+  tapLock = true;
+  setTimeout(() => { tapLock = false; }, 400);
+
+  if (btn.id === "btn-pause") {
+    game.togglePause();
+    return;
+  }
+  if (btn.id === "btn-practice") {
+    if (!game.running) return;
+    game.practice = !game.practice;
+    if (!game.practice) game.checkpoints = [];
+    return;
+  }
+  if (btn.classList.contains("level-card") && btn.dataset.levelId != null) {
+    startGame(Number(btn.dataset.levelId));
+    return;
+  }
+  if (btn.classList.contains("icon-slot") && btn.dataset.iconId != null) {
+    const id = Number(btn.dataset.iconId);
+    if (!save.unlockedIcons.includes(id)) return;
+    save.selectedIcon = id;
+    writeSave(save);
+    renderIcons();
+    return;
+  }
+  if (btn.hasAttribute("data-back")) {
+    showScreen(btn.getAttribute("data-back"));
+    return;
+  }
+  if (btn.hasAttribute("data-action")) {
+    handleAction(btn.getAttribute("data-action"));
+  }
+}
+
+const app = $("#app");
+app.addEventListener("pointerdown", uiTap, { passive: false });
+app.addEventListener("click", (e) => {
+  // Fallback se pointerdown não existir/não disparar
+  if (e.target.closest("[data-action], [data-back], #btn-pause, #btn-practice, .level-card, .icon-slot")) {
+    uiTap(e);
+  }
+}, true);
 
 function idleDraw() {
   if (game.running) return;
@@ -257,12 +265,15 @@ window.addEventListener("orientationchange", () => {
   setTimeout(() => {
     renderer.resize();
     if (!game.running) idleDraw();
-  }, 200);
+  }, 150);
 });
 
-// iOS: reativa áudio no primeiro toque em qualquer lugar
-window.addEventListener(
-  "touchstart",
-  () => { audio.unlock().catch(() => {}); },
-  { once: true, passive: true }
+document.addEventListener(
+  "visibilitychange",
+  () => {
+    if (!document.hidden) {
+      renderer.resize();
+      audio.unlock().catch(() => {});
+    }
+  }
 );

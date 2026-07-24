@@ -80,7 +80,7 @@ export class Game {
     this.player.usedPads = new Set();
     this.player.usedOrbs = new Set();
     this.particles.clear();
-    this.camX = Math.max(0, this.player.x - 180);
+    this.camX = Math.max(0, this.player.x - 120);
     this.deathTimer = 0;
     this.winTimer = 0;
     this.attemptFlash = 0.6;
@@ -236,7 +236,7 @@ export class Game {
     }
 
     this.particles.update(dt);
-    this.camX += (this.player.x - 180 - this.camX) * Math.min(1, dt * 10);
+    this.camX += (this.player.x - Math.min(140, this.renderer.w * 0.22 / (this.renderer.viewScale || 0.7)) - this.camX) * Math.min(1, dt * 10);
 
     const pct = this.percent();
 
