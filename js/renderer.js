@@ -29,8 +29,8 @@ export class Renderer {
     this.h = Math.max(1, Math.floor((vv && vv.height) || window.innerHeight || document.documentElement.clientHeight || 480));
     const mobile = this.w < 900 || /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
     this.dpr = Math.min(window.devicePixelRatio || 1, mobile ? 1 : 1.25);
-    // Zoom menor no celular para enxergar mais à frente
-    this.viewScale = mobile ? (this.w < this.h ? 0.34 : 0.42) : 0.68;
+    // Zoom no celular: meio-termo (nem colado, nem longe demais)
+    this.viewScale = mobile ? (this.w < this.h ? 0.52 : 0.58) : 0.7;
     this.canvas.width = Math.floor(this.w * this.dpr);
     this.canvas.height = Math.floor(this.h * this.dpr);
     this.canvas.style.width = "100%";
