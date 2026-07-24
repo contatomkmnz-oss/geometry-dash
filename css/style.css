@@ -39,9 +39,8 @@ html, body {
   height: 100dvh;
   overflow: hidden;
   background:
-    radial-gradient(1200px 600px at 20% -10%, #1a2a6a55, transparent 60%),
-    radial-gradient(900px 500px at 90% 10%, #ff2d9540, transparent 55%),
-    linear-gradient(180deg, #0a1024, #05070f 70%);
+    radial-gradient(900px 500px at 50% 100%, #3a2cff33, transparent 55%),
+    linear-gradient(180deg, #1a1464, #0a0628 70%);
 }
 
 #game {
@@ -108,12 +107,18 @@ html, body {
   letter-spacing: 0.04em;
   line-height: 0.95;
   text-align: center;
-  text-shadow: 0 0 40px #00e5ff66, 0 8px 0 #0a1630;
+  color: #b8ff3c;
+  -webkit-text-stroke: 3px #0a0a12;
+  paint-order: stroke fill;
+  text-shadow:
+    0 0 12px #b8ff3caa,
+    0 0 28px #b8ff3c66,
+    0 6px 0 #061008;
 }
 
 .brand h1 span {
   display: block;
-  color: var(--accent);
+  color: #b8ff3c;
 }
 
 .tagline {

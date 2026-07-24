@@ -4,5 +4,4 @@ Thumbs.db
 *.log
 .vercel
 .netlify
-
-.vercel
+assets/frame-*.png

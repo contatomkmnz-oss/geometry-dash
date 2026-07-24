@@ -18,9 +18,11 @@ export const MODES = {
 };
 
 export const COLORS = {
-  player: ["#00e5ff", "#ff2d95", "#b8ff3c", "#ffd24a", "#a78bfa", "#fb7185", "#34d399", "#60a5fa"],
-  bg: ["#0b1228", "#12081c", "#081816", "#1a0c08", "#0c1020"],
-  accent: ["#00e5ff", "#ff2d95", "#b8ff3c", "#ffd24a", "#a78bfa"],
+  // Ícones neon no estilo GD
+  player: ["#b8ff3c", "#ff2d95", "#00e5ff", "#ffd24a", "#a78bfa", "#ff6b35", "#34d399", "#60a5fa"],
+  // Fundos azul/roxo profundos
+  bg: ["#1a1464", "#14105a", "#0e2a5c", "#1c0f4a", "#102050"],
+  accent: ["#7ef9ff", "#ff2d95", "#b8ff3c", "#ffd24a", "#c4a0ff"],
 };
 
 export const ICON_UNLOCKS = [

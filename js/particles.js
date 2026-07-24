@@ -43,7 +43,16 @@ export class Particles {
 
   trail(x, y, color) {
     if (this.items.length > this.max * 0.7) return;
-    this.emit(x, y, { count: 1, color, speed: 20, life: 0.18, size: 2.5, gravity: 0, spread: Math.PI });
+    this.emit(x, y, {
+      count: 1,
+      color,
+      speed: 10,
+      life: 0.28,
+      size: 5,
+      gravity: 0,
+      spread: 0.4,
+      angle: Math.PI,
+    });
   }
 
   update(dt) {
