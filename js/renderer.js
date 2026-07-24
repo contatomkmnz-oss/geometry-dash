@@ -51,7 +51,7 @@ export class Renderer {
     this.h = Math.max(1, Math.floor((vv && vv.height) || window.innerHeight || document.documentElement.clientHeight || 480));
     const mobile = this.w < 900 || /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
     this.dpr = Math.min(window.devicePixelRatio || 1, mobile ? 1 : 1.25);
-    this.viewScale = mobile ? (this.w < this.h ? 0.52 : 0.58) : 0.7;
+    this.viewScale = mobile ? (this.w < this.h ? 0.58 : 0.64) : Math.min(0.95, 900 / Math.max(this.h, 1) * 0.85 + 0.35);
     this.canvas.width = Math.floor(this.w * this.dpr);
     this.canvas.height = Math.floor(this.h * this.dpr);
     this.canvas.style.width = "100%";

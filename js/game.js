@@ -33,6 +33,8 @@ export class Game {
     this._saveAcc = 0;
     this._lastHudPct = -1;
     this.runMoney = 0;
+    this._deathShown = false;
+    this.autoplay = null;
   }
 
   startLevel(levelId, { practice = false } = {}) {
@@ -79,12 +81,19 @@ export class Game {
     if (spawn.gravityDir) this.player.gravityDir = spawn.gravityDir;
     this.player.usedPads = new Set();
     this.player.usedOrbs = new Set();
+    // Moedas/orbs voltam após morrer (nova tentativa)
+    if (this.level) {
+      for (const o of this.level.objects) {
+        if (o.type === "coin") o.collected = false;
+      }
+    }
     this.particles.clear();
     this.camX = Math.max(0, this.player.x - 120);
     this.deathTimer = 0;
     this.winTimer = 0;
     this.attemptFlash = 0.6;
     this.state = "playing";
+    this._deathShown = false;
     if (!fresh && !this.checkpoints.length) {
       this.attempt++;
       recordAttempt(this.save, this.levelId);
@@ -92,12 +101,12 @@ export class Game {
   }
 
   togglePause() {
-    if (!this.running || this.state !== "playing") return;
+    if (!this.running || (this.state !== "playing" && !this.paused)) return;
     this.paused = !this.paused;
     this.onUI({ type: this.paused ? "pause" : "resume" });
     if (!this.paused) {
       this.last = performance.now();
-      this.loop(this.last);
+      // loop já continua via RAF enquanto running=true — só recalibra o dt
     }
   }
 
@@ -119,6 +128,9 @@ export class Game {
     if (!this.running) return;
     const dt = Math.min(0.033, (now - this.last) / 1000 || 0.016);
     this.last = now;
+
+    // Bot decide ANTES do beginFrame para valer neste tick
+    if (this.autoplay) this.autoplay.tick();
 
     this.input.beginFrame();
 
@@ -181,9 +193,9 @@ export class Game {
         if (this.practice) {
           this.resetAttempt();
           this.onUI({ type: "playing", attempt: this.attempt, practice: true });
-        } else {
+        } else if (!this._deathShown) {
+          this._deathShown = true;
           this.onUI({ type: "death", percent: this.percent() });
-          // wait for UI retry — keep rendering
         }
       }
       return;

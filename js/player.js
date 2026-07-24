@@ -140,6 +140,9 @@ export class Player {
     if (this.onGround) {
       this.coyote = 0.08;
       this.jumpsLeft = this.jumpsMax;
+    } else if (prevOnGround && this.jumpsLeft >= this.jumpsMax) {
+      // Saiu do chão sem pular — só 1 pulo aéreo
+      this.jumpsLeft = 1;
     }
     if (!prevOnGround && this.onGround && Math.abs(this.vy) < 1) {
       // landed
@@ -264,10 +267,26 @@ export class Player {
             this.vy = Math.max(this.vy, 0);
           }
         }
-      } else if (this.cx < s.x + s.w / 2) {
-        this.x = s.x - this.w;
       } else {
-        this.x = s.x + s.w;
+        // Colisão lateral: sobe o degrau se possível (evita travar no scroll)
+        const foot = this.y + this.h;
+        const top = s.y;
+        const canStep =
+          this.gravityDir > 0 &&
+          foot > top &&
+          foot <= top + Math.min(s.h, this.h * 0.85) &&
+          this.vy >= -160;
+
+        if (canStep || (this.gravityDir > 0 && this.cy <= s.y + s.h * 0.4)) {
+          this.y = top - this.h;
+          this.vy = 0;
+          this.onGround = true;
+        } else if (this.gravityDir < 0 && this.cy >= s.y + s.h * 0.6) {
+          this.y = s.y + s.h;
+          this.vy = 0;
+          this.onGround = true;
+        }
+        // Nunca empurra X para trás — o scroll contínuo + push = softlock
       }
     }
   }
