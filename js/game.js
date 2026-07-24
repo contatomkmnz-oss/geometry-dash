@@ -24,14 +24,21 @@ export class Game {
     this.attemptFlash = 0;
     this.deathTimer = 0;
     this.winTimer = 0;
-    this.state = "idle"; // idle | playing | dead | won
+    this.state = "idle";
     this.last = 0;
     this.raf = 0;
+    this.solids = [];
+    this.interactables = [];
+    this._hudAcc = 0;
+    this._saveAcc = 0;
+    this._lastHudPct = -1;
   }
 
   startLevel(levelId, { practice = false } = {}) {
     this.levelId = levelId;
     this.level = structuredClone(getLevel(levelId));
+    this.solids = this.level.objects.filter((o) => o.type === "block");
+    this.interactables = this.level.objects.filter((o) => o.type !== "block");
     this.practice = practice;
     this.checkpoints = [];
     this.attempt = (this.save.attempts[levelId] || 0) + 1;
@@ -136,12 +143,19 @@ export class Game {
       iconId: this.save.selectedIcon,
     });
 
-    this.onUI({
-      type: "hud",
-      percent: this.percent(),
-      attempt: this.attempt,
-      practice: this.practice,
-    });
+    // HUD DOM updates throttled (~10fps)
+    this._hudAcc += dt;
+    if (this._hudAcc >= 0.1) {
+      this._hudAcc = 0;
+      const pct = this.percent();
+      this._lastHudPct = pct;
+      this.onUI({
+        type: "hud",
+        percent: pct,
+        attempt: this.attempt,
+        practice: this.practice,
+      });
+    }
 
     this.input.endFrame();
     this.raf = requestAnimationFrame(this.loop);
@@ -173,8 +187,10 @@ export class Game {
 
     if (this.state !== "playing") return;
 
-    const solids = this.level.objects.filter((o) => o.type === "block");
-    const interactables = this.level.objects.filter((o) => o.type !== "block");
+    const px = this.player.x;
+    const near = (o) => o.x + o.w > px - 80 && o.x < px + 220;
+    const solids = this.solids.filter(near);
+    const interactables = this.interactables.filter(near);
     const color = COLORS.player[this.save.selectedIcon % COLORS.player.length];
 
     const result = this.player.update(
@@ -202,12 +218,18 @@ export class Game {
     this.camX += (this.player.x - 180 - this.camX) * Math.min(1, dt * 10);
 
     const pct = this.percent();
-    recordProgress(this.save, this.levelId, pct, false, 0);
+
+    // Persist progress at most ~2x/sec (localStorage every frame was crushing mobile)
+    this._saveAcc += dt;
+    if (this._saveAcc >= 0.5) {
+      this._saveAcc = 0;
+      recordProgress(this.save, this.levelId, pct, false, 0);
+    }
 
     if (result.died) {
       this.state = "dead";
       this.deathTimer = this.practice ? 0.55 : 0.85;
-      this.renderer.addShake(14);
+      this.renderer.addShake(10);
       recordProgress(this.save, this.levelId, pct, false, 0);
       return;
     }
@@ -218,10 +240,10 @@ export class Game {
       const stars = this.level.stars;
       recordProgress(this.save, this.levelId, 100, true, stars);
       this.particles.emit(this.player.cx, this.player.cy, {
-        count: 40,
+        count: 20,
         color: "#b8ff3c",
-        speed: 420,
-        life: 1,
+        speed: 360,
+        life: 0.7,
       });
       this.onUI({
         type: "complete",

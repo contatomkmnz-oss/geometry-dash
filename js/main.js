@@ -204,14 +204,16 @@ function idleDraw() {
     level: { objects: [], theme: 0 },
     player: { alive: false, x: 0, y: 0, w: 0, h: 0, mode: "cube", rotation: 0 },
     particles: { items: [] },
-    camX: performance.now() * 0.05,
+    camX: 0,
     practice: false,
     checkpoints: [],
     attemptFlash: 0,
     iconId: save.selectedIcon,
   });
-  requestAnimationFrame(idleDraw);
 }
 
 showScreen("menu");
 idleDraw();
+window.addEventListener("resize", () => {
+  if (!game.running) idleDraw();
+});

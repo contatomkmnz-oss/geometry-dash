@@ -265,7 +265,7 @@ kbd {
   display: grid;
   place-items: center;
   background: rgba(3, 6, 14, 0.72);
-  backdrop-filter: blur(6px);
+  backdrop-filter: none;
 }
 
 .panel {
@@ -348,9 +348,9 @@ kbd {
   content: "";
   position: absolute;
   border-radius: 50%;
-  filter: blur(40px);
-  opacity: 0.45;
-  animation: float 8s ease-in-out infinite;
+  filter: blur(18px);
+  opacity: 0.28;
+  animation: none;
 }
 
 .bg-orbs::before {

@@ -199,7 +199,7 @@ export class Player {
         this.setMode(o.mode);
         this.portalCooldown = 0.35;
         audio.portal();
-        particles.emit(this.cx, this.cy, { count: 16, color: "#00e5ff", speed: 280, life: 0.5 });
+        particles.emit(this.cx, this.cy, { count: 8, color: "#00e5ff", speed: 220, life: 0.35 });
         events.push("portal");
       }
 
@@ -220,7 +220,7 @@ export class Player {
     // Hazards: wave tip collision already via spikes/blocks
     this.trailTimer -= dt;
     if (this.trailTimer <= 0) {
-      this.trailTimer = 0.03;
+      this.trailTimer = 0.08;
       particles.trail(this.x, this.cy, color);
     }
 
