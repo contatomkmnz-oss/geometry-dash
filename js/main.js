@@ -1,0 +1,217 @@
+import { LEVELS } from "./levels.js";
+import { COLORS, ICON_UNLOCKS } from "./constants.js";
+import { loadSave, writeSave } from "./storage.js";
+import { AudioEngine } from "./audio.js";
+import { Input } from "./input.js";
+import { Renderer } from "./renderer.js";
+import { Game } from "./game.js";
+
+const $ = (sel) => document.querySelector(sel);
+const canvas = $("#game");
+const save = loadSave();
+const audio = new AudioEngine();
+const input = new Input(canvas);
+const renderer = new Renderer(canvas);
+
+const ui = {
+  menu: $("#menu"),
+  levels: $("#levels"),
+  icons: $("#icons"),
+  howto: $("#howto"),
+  hud: $("#hud"),
+  pause: $("#pause"),
+  death: $("#death"),
+  complete: $("#complete"),
+  levelList: $("#level-list"),
+  iconGrid: $("#icon-grid"),
+  attempt: $("#attempt"),
+  percent: $("#percent"),
+  progress: $("#progress-bar"),
+  deathPercent: $("#death-percent"),
+  completeStars: $("#complete-stars"),
+  completeAttempts: $("#complete-attempts"),
+  totalStars: $("#total-stars"),
+  bestRun: $("#best-run"),
+};
+
+function hideAllScreens() {
+  [ui.menu, ui.levels, ui.icons, ui.howto].forEach((el) => el.classList.add("hidden"));
+  [ui.pause, ui.death, ui.complete].forEach((el) => el.classList.add("hidden"));
+}
+
+function showScreen(name) {
+  hideAllScreens();
+  ui.hud.classList.add("hidden");
+  if (name === "menu") {
+    ui.menu.classList.remove("hidden");
+    refreshMenuStats();
+  } else if (name === "levels") {
+    ui.levels.classList.remove("hidden");
+    renderLevels();
+  } else if (name === "icons") {
+    ui.icons.classList.remove("hidden");
+    renderIcons();
+  } else if (name === "howto") {
+    ui.howto.classList.remove("hidden");
+  }
+}
+
+function refreshMenuStats() {
+  ui.totalStars.textContent = `★ ${save.stars}`;
+  const bests = Object.values(save.bestPercent);
+  const best = bests.length ? Math.max(...bests) : 0;
+  ui.bestRun.textContent = `Melhor: ${best}%`;
+}
+
+function renderLevels() {
+  ui.levelList.innerHTML = "";
+  LEVELS.forEach((lvl) => {
+    const best = save.bestPercent[lvl.id] || 0;
+    const done = !!save.completed[lvl.id];
+    const btn = document.createElement("button");
+    btn.className = "level-card";
+    btn.innerHTML = `
+      <div class="name">${done ? "✓ " : ""}${lvl.name}</div>
+      <div class="meta">
+        <span class="diff">${lvl.difficulty} · ${"★".repeat(lvl.stars)}</span>
+        <span>${best}%</span>
+      </div>
+    `;
+    btn.addEventListener("click", async () => {
+      await audio.unlock();
+      audio.click();
+      startGame(lvl.id);
+    });
+    ui.levelList.appendChild(btn);
+  });
+}
+
+function renderIcons() {
+  ui.iconGrid.innerHTML = "";
+  ICON_UNLOCKS.forEach((icon) => {
+    const unlocked = save.unlockedIcons.includes(icon.id);
+    const slot = document.createElement("button");
+    slot.className = `icon-slot${unlocked ? "" : " locked"}${save.selectedIcon === icon.id ? " selected" : ""}`;
+    slot.title = unlocked ? icon.name : `Complete o nível ${icon.unlock}`;
+    slot.style.background = unlocked ? COLORS.player[icon.id] : "#121a33";
+    slot.textContent = unlocked ? "◆" : "🔒";
+    slot.addEventListener("click", () => {
+      if (!unlocked) return;
+      save.selectedIcon = icon.id;
+      writeSave(save);
+      audio.click();
+      renderIcons();
+    });
+    ui.iconGrid.appendChild(slot);
+  });
+}
+
+const game = new Game({
+  renderer,
+  input,
+  audio,
+  save,
+  onUI: handleUI,
+});
+
+function handleUI(msg) {
+  if (msg.type === "hud") {
+    ui.attempt.textContent = `Tentativa ${msg.attempt}${msg.practice ? " · PRÁTICA" : ""}`;
+    ui.percent.textContent = `${Math.floor(msg.percent)}%`;
+    ui.progress.style.width = `${msg.percent}%`;
+  }
+  if (msg.type === "playing") {
+    hideAllScreens();
+    ui.hud.classList.remove("hidden");
+    ui.pause.classList.add("hidden");
+    ui.death.classList.add("hidden");
+    ui.complete.classList.add("hidden");
+  }
+  if (msg.type === "pause") ui.pause.classList.remove("hidden");
+  if (msg.type === "resume") ui.pause.classList.add("hidden");
+  if (msg.type === "death") {
+    ui.deathPercent.textContent = `${Math.floor(msg.percent)}%`;
+    ui.death.classList.remove("hidden");
+  }
+  if (msg.type === "complete") {
+    ui.completeStars.textContent = "★".repeat(msg.stars);
+    ui.completeAttempts.textContent = `Tentativas: ${msg.attempts}`;
+    ui.complete.classList.remove("hidden");
+    refreshMenuStats();
+  }
+  if (msg.type === "menu") {
+    showScreen("menu");
+  }
+}
+
+function startGame(levelId) {
+  hideAllScreens();
+  ui.hud.classList.remove("hidden");
+  game.startLevel(levelId, { practice: false });
+}
+
+document.querySelectorAll("[data-action]").forEach((btn) => {
+  btn.addEventListener("click", async () => {
+    await audio.unlock();
+    const action = btn.dataset.action;
+    audio.click();
+
+    if (action === "play") startGame(0);
+    if (action === "levels") showScreen("levels");
+    if (action === "icons") showScreen("icons");
+    if (action === "howto") showScreen("howto");
+    if (action === "resume") game.togglePause();
+    if (action === "restart" || action === "retry") {
+      ui.death.classList.add("hidden");
+      ui.pause.classList.add("hidden");
+      ui.complete.classList.add("hidden");
+      game.retry();
+    }
+    if (action === "to-menu") {
+      game.stopToMenu();
+      showScreen("menu");
+    }
+    if (action === "next") {
+      const next = Math.min(LEVELS.length - 1, (game.levelId || 0) + 1);
+      startGame(next);
+    }
+  });
+});
+
+document.querySelectorAll("[data-back]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    audio.click();
+    showScreen(btn.dataset.back);
+  });
+});
+
+$("#btn-pause").addEventListener("click", async () => {
+  await audio.unlock();
+  game.togglePause();
+});
+
+$("#btn-practice").addEventListener("click", async () => {
+  await audio.unlock();
+  if (!game.running) return;
+  game.practice = !game.practice;
+  if (!game.practice) game.checkpoints = [];
+  audio.click();
+});
+
+function idleDraw() {
+  if (game.running) return;
+  renderer.draw({
+    level: { objects: [], theme: 0 },
+    player: { alive: false, x: 0, y: 0, w: 0, h: 0, mode: "cube", rotation: 0 },
+    particles: { items: [] },
+    camX: performance.now() * 0.05,
+    practice: false,
+    checkpoints: [],
+    attemptFlash: 0,
+    iconId: save.selectedIcon,
+  });
+  requestAnimationFrame(idleDraw);
+}
+
+showScreen("menu");
+idleDraw();

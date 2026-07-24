@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Geometry Dash</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Russo+One&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="app">
+    <canvas id="game"></canvas>
+
+    <div id="hud" class="hidden">
+      <div id="progress-wrap"><div id="progress-bar"></div></div>
+      <div id="hud-left">
+        <span id="attempt">Tentativa 1</span>
+        <span id="percent">0%</span>
+      </div>
+      <div id="hud-right">
+        <button id="btn-practice" type="button" title="Modo prática">P</button>
+        <button id="btn-pause" type="button" title="Pausar">❚❚</button>
+      </div>
+    </div>
+
+    <div id="menu" class="screen">
+      <div class="bg-orbs" aria-hidden="true"></div>
+      <header class="brand">
+        <h1>GEOMETRY<span>DASH</span></h1>
+        <p class="tagline">Salte. Voe. Sobreviva ao ritmo.</p>
+      </header>
+      <nav class="menu-nav">
+        <button class="menu-btn primary" data-action="play">JOGAR</button>
+        <button class="menu-btn" data-action="levels">NÍVEIS</button>
+        <button class="menu-btn" data-action="icons">ÍCONES</button>
+        <button class="menu-btn" data-action="howto">COMO JOGAR</button>
+      </nav>
+      <footer class="menu-foot">
+        <span id="total-stars">★ 0</span>
+        <span id="best-run">Melhor: 0%</span>
+      </footer>
+    </div>
+
+    <div id="levels" class="screen hidden">
+      <button class="back-btn" data-back="menu">← Voltar</button>
+      <h2>Selecionar Nível</h2>
+      <div id="level-list" class="level-grid"></div>
+    </div>
+
+    <div id="icons" class="screen hidden">
+      <button class="back-btn" data-back="menu">← Voltar</button>
+      <h2>Ícones</h2>
+      <p class="hint">Desbloqueie ícones completando níveis.</p>
+      <div id="icon-grid" class="icon-grid"></div>
+    </div>
+
+    <div id="howto" class="screen hidden">
+      <button class="back-btn" data-back="menu">← Voltar</button>
+      <h2>Como Jogar</h2>
+      <ul class="howto-list">
+        <li><kbd>Espaço</kbd> / <kbd>Clique</kbd> / <kbd>Toque</kbd> — ação do modo atual</li>
+        <li><strong>Cubo</strong> — pula no chão</li>
+        <li><strong>Nave</strong> — segura para subir, solta para descer</li>
+        <li><strong>Bola</strong> — inverte a gravidade no chão/teto</li>
+        <li><strong>UFO</strong> — impulsa para cima a cada toque</li>
+        <li><strong>Wave</strong> — segura para subir em diagonal</li>
+        <li><kbd>P</kbd> — modo prática (checkpoints com <kbd>Z</kbd>)</li>
+        <li><kbd>Esc</kbd> — pausar / menu</li>
+      </ul>
+    </div>
+
+    <div id="pause" class="overlay hidden">
+      <div class="panel">
+        <h2>Pausado</h2>
+        <button class="menu-btn primary" data-action="resume">CONTINUAR</button>
+        <button class="menu-btn" data-action="restart">RECOMEÇAR</button>
+        <button class="menu-btn" data-action="to-menu">MENU</button>
+      </div>
+    </div>
+
+    <div id="death" class="overlay hidden">
+      <div class="panel">
+        <h2>Você morreu!</h2>
+        <p id="death-percent">0%</p>
+        <button class="menu-btn primary" data-action="retry">TENTAR DE NOVO</button>
+        <button class="menu-btn" data-action="to-menu">MENU</button>
+      </div>
+    </div>
+
+    <div id="complete" class="overlay hidden">
+      <div class="panel win">
+        <h2>NÍVEL COMPLETO!</h2>
+        <p id="complete-stars">★★★</p>
+        <p id="complete-attempts">Tentativas: 1</p>
+        <button class="menu-btn primary" data-action="next">PRÓXIMO</button>
+        <button class="menu-btn" data-action="retry">REJOGAR</button>
+        <button class="menu-btn" data-action="to-menu">MENU</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
