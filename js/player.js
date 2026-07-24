@@ -129,23 +129,25 @@ export class Player {
       }
     }
 
-    // Horizontal auto-scroll is world-based; player x advances with scroll
-    this.x += SCROLL_BASE * speed * dt;
+    // Movimento com eixos separados — nunca fica dentro do bloco
+    const stepHeight = Math.max(this.h * 0.65, BLOCK * 0.55);
 
-    // Integrate Y with collision
+    const prevX = this.x;
+    this.x += SCROLL_BASE * speed * dt;
+    this.resolveSolidX(solids, prevX, stepHeight);
+
     this.onGround = false;
     this.y += this.vy * dt;
-    this.resolveSolids(solids);
+    this.resolveSolidY(solids);
+
+    // Passo final: se ainda houver overlap, ejeta pelo menor eixo
+    this.separateFromSolids(solids);
 
     if (this.onGround) {
       this.coyote = 0.08;
       this.jumpsLeft = this.jumpsMax;
     } else if (prevOnGround && this.jumpsLeft >= this.jumpsMax) {
-      // Saiu do chão sem pular — só 1 pulo aéreo
       this.jumpsLeft = 1;
-    }
-    if (!prevOnGround && this.onGround && Math.abs(this.vy) < 1) {
-      // landed
     }
 
     // Rotation
@@ -240,54 +242,96 @@ export class Player {
     return { died: false, finished: false, events };
   }
 
-  resolveSolids(solids) {
-    // Blocos só empurram — só espinhos matam
+  resolveSolidX(solids, prevX, stepHeight) {
+    for (const s of solids) {
+      if (!aabb(this, s)) continue;
+
+      const feet = this.y + this.h;
+      // Já em cima do bloco: não trata como parede
+      if (feet <= s.y + 1.5 && this.y < s.y) continue;
+
+      // Degrau: sobe em vez de atravessar/grudar
+      if (
+        this.gravityDir > 0 &&
+        feet > s.y &&
+        feet <= s.y + stepHeight &&
+        this.vy >= -200
+      ) {
+        this.y = s.y - this.h;
+        this.vy = 0;
+        this.onGround = true;
+        continue;
+      }
+
+      // Parede sólida — fica colado por fora, nunca dentro
+      if (prevX + this.w <= s.x + 0.1) {
+        this.x = s.x - this.w;
+      } else if (prevX >= s.x + s.w - 0.1) {
+        this.x = s.x + s.w;
+      } else if (this.cx < s.x + s.w / 2) {
+        this.x = s.x - this.w;
+      } else {
+        this.x = s.x + s.w;
+      }
+    }
+  }
+
+  resolveSolidY(solids) {
     for (const s of solids) {
       if (!aabb(this, s)) continue;
 
       const overlapX = Math.min(this.x + this.w - s.x, s.x + s.w - this.x);
-      const overlapY = Math.min(this.y + this.h - s.y, s.y + s.h - this.y);
+      if (overlapX <= 0) continue;
 
-      if (overlapY <= overlapX) {
-        const fromAbove = this.cy < s.y + s.h / 2;
-        if (fromAbove) {
-          this.y = s.y - this.h;
-          if (this.gravityDir > 0) {
-            this.vy = Math.min(this.vy, 0);
-            this.onGround = true;
-          } else {
-            this.vy = Math.min(this.vy, 0);
-          }
+      const fromAbove = this.cy < s.y + s.h / 2;
+      if (fromAbove) {
+        this.y = s.y - this.h;
+        if (this.gravityDir > 0) {
+          this.vy = Math.min(this.vy, 0);
+          this.onGround = true;
         } else {
-          this.y = s.y + s.h;
-          if (this.gravityDir < 0) {
-            this.vy = Math.max(this.vy, 0);
-            this.onGround = true;
-          } else {
-            this.vy = Math.max(this.vy, 0);
-          }
+          this.vy = Math.min(this.vy, 0);
         }
       } else {
-        // Colisão lateral: sobe o degrau se possível (evita travar no scroll)
-        const foot = this.y + this.h;
-        const top = s.y;
-        const canStep =
-          this.gravityDir > 0 &&
-          foot > top &&
-          foot <= top + Math.min(s.h, this.h * 0.85) &&
-          this.vy >= -160;
-
-        if (canStep || (this.gravityDir > 0 && this.cy <= s.y + s.h * 0.4)) {
-          this.y = top - this.h;
-          this.vy = 0;
+        this.y = s.y + s.h;
+        if (this.gravityDir < 0) {
+          this.vy = Math.max(this.vy, 0);
           this.onGround = true;
-        } else if (this.gravityDir < 0 && this.cy >= s.y + s.h * 0.6) {
-          this.y = s.y + s.h;
-          this.vy = 0;
-          this.onGround = true;
+        } else {
+          this.vy = Math.max(this.vy, 0);
         }
-        // Nunca empurra X para trás — o scroll contínuo + push = softlock
       }
+    }
+  }
+
+  separateFromSolids(solids) {
+    // Garante zero overlap residual (cantos / vários blocos)
+    for (let n = 0; n < 3; n++) {
+      let moved = false;
+      for (const s of solids) {
+        if (!aabb(this, s)) continue;
+        const overlapX = Math.min(this.x + this.w - s.x, s.x + s.w - this.x);
+        const overlapY = Math.min(this.y + this.h - s.y, s.y + s.h - this.y);
+        if (overlapX <= 0 || overlapY <= 0) continue;
+
+        if (overlapY <= overlapX) {
+          if (this.cy < s.y + s.h / 2) {
+            this.y = s.y - this.h;
+            this.vy = Math.min(this.vy, 0);
+            if (this.gravityDir > 0) this.onGround = true;
+          } else {
+            this.y = s.y + s.h;
+            this.vy = Math.max(this.vy, 0);
+            if (this.gravityDir < 0) this.onGround = true;
+          }
+        } else if (this.cx < s.x + s.w / 2) {
+          this.x = s.x - this.w;
+        } else {
+          this.x = s.x + s.w;
+        }
+        moved = true;
+      }
+      if (!moved) break;
     }
   }
 
