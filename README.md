@@ -4,7 +4,9 @@ Clone jogável inspirado em Geometry Dash — HTML5 Canvas + JavaScript puro.
 
 ## Jogar online
 
-https://contatomkmnz-oss.github.io/geometry-dash/
+- **Vercel:** https://geometry-dash-five.vercel.app
+- **GitHub Pages:** https://contatomkmnz-oss.github.io/geometry-dash/
+- **Repo:** https://github.com/contatomkmnz-oss/geometry-dash
 
 ## Como jogar localmente
 
