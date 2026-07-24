@@ -333,6 +333,7 @@ kbd {
 #total-money {
   color: var(--gold);
 }
+#hud-left { left: 16px; }
 #hud-right { right: 16px; pointer-events: auto; }
 
 #hud-right button {
