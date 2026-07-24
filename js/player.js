@@ -233,7 +233,7 @@ export class Player {
     // Hazards: wave tip collision already via spikes/blocks
     this.trailTimer -= dt;
     if (this.trailTimer <= 0) {
-      this.trailTimer = 0.08;
+      this.trailTimer = 0.14;
       particles.trail(this.x, this.cy, color);
     }
 
@@ -282,7 +282,7 @@ export class Player {
   }
 
   separateFromSolids(solids) {
-    for (let n = 0; n < 4; n++) {
+    for (let n = 0; n < 2; n++) {
       let moved = false;
       for (const s of solids) {
         if (!aabb(this, s)) continue;
@@ -290,7 +290,6 @@ export class Player {
         const overlapY = Math.min(this.y + this.h - s.y, s.y + s.h - this.y);
         if (overlapX <= 0 || overlapY <= 0) continue;
 
-        // No canto interno (L), prioriza sair pela vertical se quase no topo/base
         const nearTop = (this.y + this.h) - s.y < overlapX + 2;
         const nearBottom = (s.y + s.h) - this.y < overlapX + 2;
 

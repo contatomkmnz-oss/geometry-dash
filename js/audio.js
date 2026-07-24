@@ -83,21 +83,14 @@ export class AudioEngine {
   startMusic(bpm = 140) {
     if (!this.ctx || this.started) return;
     this.started = true;
-    const beat = 60 / bpm;
+    const beat = 60 / Math.max(100, bpm);
     let step = 0;
-    const scale = [0, 3, 5, 7, 10, 12];
-    const base = 110;
-
     const tick = () => {
       if (!this.started || !this.enabled) return;
       const t = this.ctx.currentTime;
-      const note = base * Math.pow(2, scale[step % scale.length] / 12);
-
-      // Lighter music: fewer layered voices
-      this.pulse(note, beat * 0.55, 0.04);
-      if (step % 4 === 0) this.kick(t);
-      if (step % 8 === 4) this.hat(t);
-
+      // Música bem leve: só kick + nota a cada 2 beats
+      if (step % 2 === 0) this.kick(t);
+      if (step % 4 === 0) this.pulse(110 * (1 + (step % 8) * 0.05), beat * 0.4, 0.03);
       step++;
       this._timer = setTimeout(tick, beat * 1000);
     };
