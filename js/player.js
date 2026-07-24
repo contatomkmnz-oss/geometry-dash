@@ -130,17 +130,15 @@ export class Player {
     }
 
     // Movimento com eixos separados — nunca fica dentro do bloco
-    const stepHeight = Math.max(this.h * 0.65, BLOCK * 0.55);
-
     const prevX = this.x;
     this.x += SCROLL_BASE * speed * dt;
-    this.resolveSolidX(solids, prevX, stepHeight);
+    this.resolveSolidX(solids, prevX);
 
     this.onGround = false;
     this.y += this.vy * dt;
     this.resolveSolidY(solids);
 
-    // Passo final: se ainda houver overlap, ejeta pelo menor eixo
+    // Garante zero overlap (cantos L especialmente)
     this.separateFromSolids(solids);
 
     if (this.onGround) {
@@ -242,31 +240,18 @@ export class Player {
     return { died: false, finished: false, events };
   }
 
-  resolveSolidX(solids, prevX, stepHeight) {
+  resolveSolidX(solids, prevX) {
     for (const s of solids) {
       if (!aabb(this, s)) continue;
 
       const feet = this.y + this.h;
-      // Já em cima do bloco: não trata como parede
-      if (feet <= s.y + 1.5 && this.y < s.y) continue;
+      // Em cima do bloco (chão): ignora eixo X deste sólido
+      if (this.vy >= 0 && feet <= s.y + 2 && this.y < s.y) continue;
 
-      // Degrau: sobe em vez de atravessar/grudar
-      if (
-        this.gravityDir > 0 &&
-        feet > s.y &&
-        feet <= s.y + stepHeight &&
-        this.vy >= -200
-      ) {
-        this.y = s.y - this.h;
-        this.vy = 0;
-        this.onGround = true;
-        continue;
-      }
-
-      // Parede sólida — fica colado por fora, nunca dentro
-      if (prevX + this.w <= s.x + 0.1) {
+      // Parede: cola por fora. Sem "step-up" agressivo (ele enfiava o boneco no canto)
+      if (prevX + this.w <= s.x + 1) {
         this.x = s.x - this.w;
-      } else if (prevX >= s.x + s.w - 0.1) {
+      } else if (prevX >= s.x + s.w - 1) {
         this.x = s.x + s.w;
       } else if (this.cx < s.x + s.w / 2) {
         this.x = s.x - this.w;
@@ -281,32 +266,23 @@ export class Player {
       if (!aabb(this, s)) continue;
 
       const overlapX = Math.min(this.x + this.w - s.x, s.x + s.w - this.x);
-      if (overlapX <= 0) continue;
+      if (overlapX <= 1) continue;
 
       const fromAbove = this.cy < s.y + s.h / 2;
       if (fromAbove) {
         this.y = s.y - this.h;
-        if (this.gravityDir > 0) {
-          this.vy = Math.min(this.vy, 0);
-          this.onGround = true;
-        } else {
-          this.vy = Math.min(this.vy, 0);
-        }
+        this.vy = Math.min(this.vy, 0);
+        if (this.gravityDir > 0) this.onGround = true;
       } else {
         this.y = s.y + s.h;
-        if (this.gravityDir < 0) {
-          this.vy = Math.max(this.vy, 0);
-          this.onGround = true;
-        } else {
-          this.vy = Math.max(this.vy, 0);
-        }
+        this.vy = Math.max(this.vy, 0);
+        if (this.gravityDir < 0) this.onGround = true;
       }
     }
   }
 
   separateFromSolids(solids) {
-    // Garante zero overlap residual (cantos / vários blocos)
-    for (let n = 0; n < 3; n++) {
+    for (let n = 0; n < 4; n++) {
       let moved = false;
       for (const s of solids) {
         if (!aabb(this, s)) continue;
@@ -314,7 +290,11 @@ export class Player {
         const overlapY = Math.min(this.y + this.h - s.y, s.y + s.h - this.y);
         if (overlapX <= 0 || overlapY <= 0) continue;
 
-        if (overlapY <= overlapX) {
+        // No canto interno (L), prioriza sair pela vertical se quase no topo/base
+        const nearTop = (this.y + this.h) - s.y < overlapX + 2;
+        const nearBottom = (s.y + s.h) - this.y < overlapX + 2;
+
+        if (overlapY < overlapX || nearTop || nearBottom) {
           if (this.cy < s.y + s.h / 2) {
             this.y = s.y - this.h;
             this.vy = Math.min(this.vy, 0);

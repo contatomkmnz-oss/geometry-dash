@@ -5,8 +5,23 @@ const b = (x, y, w = 1, h = 1) => ({ type: "block", x: x * BLOCK, y: y * BLOCK, 
 const spike = (x, y, dir = "up") => ({ type: "spike", x: x * BLOCK, y: y * BLOCK, w: BLOCK, h: BLOCK, dir });
 const pad = (x, y, kind = "yellow") => ({ type: "pad", x: x * BLOCK, y: y * BLOCK + BLOCK * 0.7, w: BLOCK, h: BLOCK * 0.3, kind });
 const orb = (x, y, kind = "yellow") => ({ type: "orb", x: x * BLOCK + BLOCK * 0.2, y: y * BLOCK + BLOCK * 0.2, w: BLOCK * 0.6, h: BLOCK * 0.6, kind });
-const portal = (x, y, mode, h = 3) => ({ type: "portal", x: x * BLOCK, y: y * BLOCK, w: BLOCK * 0.6, h: h * BLOCK, mode });
-const grav = (x, y, flip = true, h = 3) => ({ type: "gravity", x: x * BLOCK, y: y * BLOCK, w: BLOCK * 0.6, h: h * BLOCK, flip });
+const portal = (x, y, mode, h = 3) => ({
+  type: "portal",
+  x: x * BLOCK + BLOCK * 0.25,
+  // Flutua acima do chão — nunca enterra no bloco
+  y: y * BLOCK + 10,
+  w: BLOCK * 0.5,
+  h: Math.max(BLOCK * 1.6, h * BLOCK - 20),
+  mode,
+});
+const grav = (x, y, flip = true, h = 3) => ({
+  type: "gravity",
+  x: x * BLOCK + BLOCK * 0.25,
+  y: y * BLOCK + 10,
+  w: BLOCK * 0.5,
+  h: Math.max(BLOCK * 1.6, h * BLOCK - 20),
+  flip,
+});
 const finish = (x) => ({ type: "finish", x: x * BLOCK, y: -BLOCK * 8, w: BLOCK * 2, h: BLOCK * 16 });
 const coin = (x, y) => ({
   type: "coin",
