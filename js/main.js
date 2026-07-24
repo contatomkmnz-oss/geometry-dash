@@ -31,7 +31,10 @@ const ui = {
   completeStars: $("#complete-stars"),
   completeAttempts: $("#complete-attempts"),
   totalStars: $("#total-stars"),
+  totalMoney: $("#total-money"),
   bestRun: $("#best-run"),
+  hudMoney: $("#hud-money"),
+  completeMoney: $("#complete-money"),
 };
 
 function hideAllScreens() {
@@ -58,6 +61,7 @@ function showScreen(name) {
 
 function refreshMenuStats() {
   ui.totalStars.textContent = `★ ${save.stars}`;
+  ui.totalMoney.textContent = `R$ ${save.money || 0}`;
   const bests = Object.values(save.bestPercent);
   const best = bests.length ? Math.max(...bests) : 0;
   ui.bestRun.textContent = `Melhor: ${best}%`;
@@ -119,6 +123,7 @@ function handleUI(msg) {
     ui.attempt.textContent = `Tentativa ${msg.attempt}${msg.practice ? " · PRÁTICA" : ""}`;
     ui.percent.textContent = `${Math.floor(msg.percent)}%`;
     ui.progress.style.width = `${msg.percent}%`;
+    ui.hudMoney.textContent = `R$ ${msg.money ?? save.money ?? 0}`;
   }
   if (msg.type === "playing") {
     hideAllScreens();
@@ -135,6 +140,7 @@ function handleUI(msg) {
   }
   if (msg.type === "complete") {
     ui.completeStars.textContent = "★".repeat(msg.stars);
+    ui.completeMoney.textContent = `+ R$ ${msg.runMoney ?? 0} nesta partida`;
     ui.completeAttempts.textContent = `Tentativas: ${msg.attempts}`;
     ui.complete.classList.remove("hidden");
     refreshMenuStats();

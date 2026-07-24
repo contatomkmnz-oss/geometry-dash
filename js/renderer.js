@@ -174,6 +174,26 @@ export class Renderer {
         ctx.fillStyle = o.kind === "pink" ? "#ff2d95" : "#ffd24a";
         ctx.fillRect(x, y, o.w, o.h);
         break;
+      case "coin": {
+        if (o.collected) break;
+        const cx = x + o.w / 2;
+        const cy = y + o.h / 2;
+        const r = o.w / 2;
+        ctx.fillStyle = "#ffd24a";
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#fff6a8";
+        ctx.beginPath();
+        ctx.arc(cx - r * 0.2, cy - r * 0.2, r * 0.35, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#a67c00";
+        ctx.font = `bold ${Math.max(10, o.w * 0.55)}px sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("R$", cx, cy + 1);
+        break;
+      }
       case "orb": {
         const color = o.kind === "blue" ? "#4da3ff" : o.kind === "pink" ? "#ff2d95" : "#ffd24a";
         const cx = x + o.w / 2;

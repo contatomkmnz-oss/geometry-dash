@@ -2,6 +2,7 @@ const KEY = "gd_clone_save_v1";
 
 const defaults = () => ({
   stars: 0,
+  money: 0,
   bestPercent: {},
   completed: {},
   attempts: {},
@@ -21,6 +22,12 @@ export function loadSave() {
 
 export function writeSave(data) {
   localStorage.setItem(KEY, JSON.stringify(data));
+}
+
+export function addMoney(save, amount = 1) {
+  save.money = (save.money || 0) + amount;
+  writeSave(save);
+  return save.money;
 }
 
 export function recordAttempt(save, levelId) {

@@ -8,6 +8,21 @@ const orb = (x, y, kind = "yellow") => ({ type: "orb", x: x * BLOCK + BLOCK * 0.
 const portal = (x, y, mode, h = 3) => ({ type: "portal", x: x * BLOCK, y: y * BLOCK, w: BLOCK * 0.6, h: h * BLOCK, mode });
 const grav = (x, y, flip = true, h = 3) => ({ type: "gravity", x: x * BLOCK, y: y * BLOCK, w: BLOCK * 0.6, h: h * BLOCK, flip });
 const finish = (x) => ({ type: "finish", x: x * BLOCK, y: -BLOCK * 8, w: BLOCK * 2, h: BLOCK * 16 });
+const coin = (x, y) => ({
+  type: "coin",
+  x: x * BLOCK + BLOCK * 0.25,
+  y: y * BLOCK + BLOCK * 0.25,
+  w: BLOCK * 0.5,
+  h: BLOCK * 0.5,
+  collected: false,
+  value: 1,
+});
+
+/** Coloca moedas em posições (x,y em blocos). Cada uma vale R$1. */
+function placeCoins(objs, spots) {
+  for (const [x, y] of spots) objs.push(coin(x, y));
+  return objs;
+}
 
 function platformRow(fromX, toX, y) {
   const out = [];
@@ -62,6 +77,10 @@ function buildStereoMadness() {
   objs.push(b(168, 7), b(169, 6), b(170, 5), b(171, 4));
   objs.push(...spikeRow(174, 175, 7));
   objs.push(finish(178));
+  placeCoins(objs, [
+    [6, 6], [15, 6], [25, 5], [34, 6], [42, 2], [48, 6], [58, 6], [66, 5],
+    [75, 3], [83, 6], [100, 5], [110, 5], [122, 5], [132, 5], [144, 6], [163, 3], [172, 6],
+  ]);
   return objs;
 }
 
@@ -98,6 +117,10 @@ function buildBackOnTrack() {
   objs.push(b(149, 6), b(150, 5), b(151, 4), b(152, 5));
   objs.push(...spikeRow(156, 158, 7));
   objs.push(finish(162));
+  placeCoins(objs, [
+    [5, 6], [16, 5], [26, 5], [42, 6], [54, 5], [70, 6], [80, 5], [94, 4],
+    [110, 5], [120, 5], [138, 6], [148, 5], [155, 6],
+  ]);
   return objs;
 }
 
@@ -135,6 +158,10 @@ function buildPolargeist() {
   objs.push(b(140, 7), b(141, 6), b(142, 5), b(143, 4));
   objs.push(...spikeRow(147, 149, 7));
   objs.push(finish(152));
+  placeCoins(objs, [
+    [5, 6], [14, 5], [23, 5], [40, 5], [50, 5], [62, 5], [84, 6], [98, 5],
+    [106, 4], [126, 6], [138, 5], [146, 6],
+  ]);
   return objs;
 }
 
@@ -169,6 +196,10 @@ function buildDryOut() {
   objs.push(b(170, 6), b(171, 5), b(172, 4));
   objs.push(...spikeRow(176, 178, 7));
   objs.push(finish(182));
+  placeCoins(objs, [
+    [4, 6], [14, 5], [22, 6], [38, 5], [50, 5], [64, 5], [80, 5], [104, 5],
+    [114, 5], [130, 5], [145, 5], [164, 5], [174, 6],
+  ]);
   return objs;
 }
 
@@ -209,6 +240,10 @@ function buildBaseAfterBase() {
   objs.push(b(158, 7), b(159, 6), b(160, 5));
   objs.push(...spikeRow(164, 165, 7));
   objs.push(finish(168));
+  placeCoins(objs, [
+    [4, 6], [12, 4], [26, 5], [40, 5], [56, 6], [72, 5], [90, 5], [104, 5],
+    [120, 5], [136, 5], [152, 5], [162, 6],
+  ]);
   return objs;
 }
 
@@ -249,6 +284,10 @@ function buildCantLetGo() {
   objs.push(pad(162, 8, "pink"));
   objs.push(b(166, 6), b(167, 5), b(168, 4));
   objs.push(finish(172));
+  placeCoins(objs, [
+    [4, 6], [12, 5], [26, 5], [38, 5], [52, 5], [70, 5], [88, 5], [104, 4],
+    [118, 4], [140, 5], [160, 5], [168, 5],
+  ]);
   return objs;
 }
 
@@ -276,6 +315,10 @@ function buildJumper() {
   objs.push(b(146, 6), b(147, 5), b(148, 4), b(149, 5));
   objs.push(...spikeRow(153, 155, 7));
   objs.push(finish(158));
+  placeCoins(objs, [
+    [6, 6], [20, 5], [32, 5], [44, 5], [56, 5], [68, 5], [80, 5], [100, 5],
+    [112, 5], [134, 6], [144, 5], [152, 6],
+  ]);
   return objs;
 }
 
@@ -317,6 +360,10 @@ function buildTimeMachine() {
   objs.push(...spikeRow(174, 176, 7));
   objs.push(orb(180, 4, "yellow"));
   objs.push(finish(186));
+  placeCoins(objs, [
+    [4, 6], [14, 5], [28, 5], [44, 5], [60, 5], [78, 5], [90, 5], [110, 5],
+    [134, 6], [148, 5], [164, 4], [178, 5],
+  ]);
   return objs;
 }
 

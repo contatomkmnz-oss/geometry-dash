@@ -173,6 +173,16 @@ export class Player {
         continue;
       }
 
+      if (o.type === "coin") {
+        if (!o.collected && aabb(this, o)) {
+          o.collected = true;
+          audio.coin();
+          particles.emit(this.cx, this.cy, { count: 6, color: "#ffd24a", speed: 180, life: 0.3, size: 3 });
+          events.push("coin");
+        }
+        continue;
+      }
+
       if (o.type === "pad" && !this.usedPads.has(o)) {
         this.usedPads.add(o);
         const power = o.kind === "pink" ? 1.35 : 1;

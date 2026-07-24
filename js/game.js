@@ -2,7 +2,7 @@ import { BLOCK, COLORS, SCROLL_BASE, PLAYER_SIZE } from "./constants.js";
 import { Player } from "./player.js";
 import { Particles } from "./particles.js";
 import { getLevel } from "./levels.js";
-import { recordAttempt, recordProgress } from "./storage.js";
+import { recordAttempt, recordProgress, addMoney } from "./storage.js";
 
 export class Game {
   constructor({ renderer, input, audio, save, onUI }) {
@@ -32,6 +32,7 @@ export class Game {
     this._hudAcc = 0;
     this._saveAcc = 0;
     this._lastHudPct = -1;
+    this.runMoney = 0;
   }
 
   startLevel(levelId, { practice = false } = {}) {
@@ -47,6 +48,7 @@ export class Game {
     this.input.justPressed = false;
     this.input._queuePress = false;
     this.input._queueRelease = false;
+    this.runMoney = 0;
     this.resetAttempt(true);
     this.running = true;
     this.paused = false;
@@ -154,6 +156,8 @@ export class Game {
         percent: pct,
         attempt: this.attempt,
         practice: this.practice,
+        money: this.save.money || 0,
+        runMoney: this.runMoney,
       });
     }
 
@@ -204,6 +208,17 @@ export class Game {
       color
     );
 
+    if (result.events?.length) {
+      let gained = 0;
+      for (const e of result.events) {
+        if (e === "coin") gained += 1;
+      }
+      if (gained) {
+        this.runMoney += gained;
+        addMoney(this.save, gained); // cada moeda = R$1
+      }
+    }
+
     if (this.player._pendingDeath) {
       this.player._pendingDeath = false;
       Object.assign(result, this.player.kill(this.particles, color, this.audio));
@@ -250,6 +265,7 @@ export class Game {
         stars,
         attempts: this.save.attempts[this.levelId] || this.attempt,
         levelId: this.levelId,
+        runMoney: this.runMoney,
       });
     }
   }

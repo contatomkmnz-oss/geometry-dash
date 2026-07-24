@@ -329,7 +329,10 @@ kbd {
   letter-spacing: 0.06em;
 }
 
-#hud-left { left: 16px; }
+#hud-money,
+#total-money {
+  color: var(--gold);
+}
 #hud-right { right: 16px; pointer-events: auto; }
 
 #hud-right button {

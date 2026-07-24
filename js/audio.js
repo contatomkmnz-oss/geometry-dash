@@ -50,6 +50,10 @@ export class AudioEngine {
   jump() { this.tone(520, 0.06, "square", 0.14); }
   death() { this.tone(160, 0.22, "sawtooth", 0.2); }
   orb() { this.tone(720, 0.07, "triangle", 0.12); }
+  coin() {
+    this.tone(880, 0.05, "sine", 0.12);
+    this.tone(1320, 0.06, "triangle", 0.08);
+  }
   portal() { this.tone(300, 0.1, "triangle", 0.1); }
   click() { this.tone(400, 0.03, "triangle", 0.08); }
   win() {
